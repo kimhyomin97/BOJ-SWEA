@@ -10,7 +10,6 @@ public class BOJ_2573_빙산 {
     public static class info {
         public int row;
         public int col;
-
         public info(int row, int col) {
             this.row = row;
             this.col = col;
@@ -24,10 +23,12 @@ public class BOJ_2573_빙산 {
         int m = Integer.parseInt(st.nextToken());
 
         int[][] map = new int[n][m];
+        int[][] visit = new int[n][m];
         Queue<info> queue = new LinkedList<>();
 
         for(int i=0; i<n; i++) {
             st = new StringTokenizer(br.readLine());
+            Arrays.fill(visit[i], 0);
             for(int j=0; j<m; j++) {
                 map[i][j] = Integer.parseInt(st.nextToken());
                 if(map[i][j] != 0) queue.add(new info(i, j));
@@ -36,64 +37,69 @@ public class BOJ_2573_빙산 {
 
         int[] dr = {1, -1, 0, 0};
         int[] dc = {0, 0, 1, -1};
-
+        Queue<info> popList = new LinkedList<>();
+        int year = 1;
         int size = queue.size();
         int count = 0;
-        int year = 1;
-        int ans = 0;
-        int[][] visit = new int[n][m];
-        for(int i=0; i<n; i++) Arrays.fill(visit[i], 0);
 
         while(!queue.isEmpty()) {
             info now = queue.poll();
 
-            count++;
-            if(count == size) {
-                size = queue.size();
-                count = 0;
-                year++;
-                for(int i=0; i<n; i++) Arrays.fill(visit[i], 0);
-            }
-
             for(int i=0; i<4; i++) {
                 int nr = now.row + dr[i];
                 int nc = now.col + dc[i];
-                if(nr>=0 && nr<n && nc>=0 && nc<m) { // 유효범위 확인
-                    if(map[nr][nc] <= 0) {
-                        // 접한 부분이 바닷물인 경우
-                        map[now.row][now.col]--;
-                        if(map[now.row][now.col] > 0) queue.add(new info(now.row, now.col));
-                    } else if(map[nr][nc] > 0) {
-                        // 접한 부분이 빙산인 경우
-                        if(visit[now.row][now.col] == 0) {
-                            if(visit[nr][nc] > 0) {
-                                // 동일한 덩어리인지 체크
-                                visit[now.row][now.col] = visit[nr][nc];
-                            } else {
-                                int visitNum = 0;
-                                for(int j=0; j<4; j++) {
-                                    int visitNr = now.row + dr[j];
-                                    int visitNc = now.col + dc[j];
-                                    if(visitNr>=0 && visitNr<n && visitNc>=0 && visitNc<m) {
-                                        if(visit[visitNr][visitNc] > 0) {
-                                            visitNum = visit[visitNr][visitNc];
+                if(nr>=0 && nr<n && nc>=0 && nc<m && map[nr][nc] == 0) {
+                    popList.add(new info(now.row, now.col));
+                }
+            }
+
+            count++;
+            if(count == size) {
+                // 빙하 녹이기
+                while(!popList.isEmpty()) {
+                    info popNow = popList.poll();
+                    if(map[popNow.row][popNow.col] != 0) {
+                        map[popNow.row][popNow.col]--;
+                    }
+                }
+
+                // 덩어리 계산
+                int section = 0;
+                Queue<info> sectionList = new LinkedList<>();
+                for(int i=0; i<n; i++) {
+                    for(int j=0; j<m; j++) {
+                        if(map[i][j] > 0) {
+                            queue.add(new info(i, j));
+                            if(visit[i][j] == 0) {
+                                section++;
+                                visit[i][j] = section;
+                                sectionList.add(new info(i, j));
+                                while (!sectionList.isEmpty()) {
+                                    info sectionNow = sectionList.poll();
+                                    for (int k = 0; k < 4; k++) {
+                                        int nr = sectionNow.row + dr[k];
+                                        int nc = sectionNow.col + dc[k];
+                                        if (nr >= 0 && nr < n && nc >= 0 && nc < m && map[nr][nc] > 0 && visit[nr][nc] == 0) {
+                                            visit[nr][nc] = section;
+                                            sectionList.add(new info(nr, nc));
                                         }
                                     }
-                                }
-                                if(visitNum == 0) {
-                                    ans++;
-                                    visit[now.row][now.col] = ans;
-                                    if(ans >= 2) {
-                                        System.out.println(year);
-                                        return;
-                                    }
-                                } else {
-                                    visit[now.row][now.col] = visitNum;
                                 }
                             }
                         }
                     }
                 }
+
+                if(section >= 2) {
+                    System.out.println(year);
+                    return;
+                }
+
+                // 초기화
+                size = queue.size();
+                count = 0;
+                year++;
+                for(int i=0; i<n; i++) Arrays.fill(visit[i], 0);
             }
         }
 
